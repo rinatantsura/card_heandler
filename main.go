@@ -1,1 +1,73 @@
-package card_heandler_
+package main
+
+import (
+	"errors"
+	"github.com/labstack/echo/v4"
+	"net/http"
+	"strconv"
+	"strings"
+)
+
+func main() {
+	e := echo.New()
+	e.POST("/", cardHandler)
+	e.Logger.Fatal(e.Start(":1323"))
+}
+
+type CardData struct {
+	CardNumber string `json:"card_number"`
+}
+
+func cardHandler(c echo.Context) error {
+	var cardData CardData
+	if err := c.Bind(&cardData); err != nil {
+		return c.String(http.StatusBadRequest, err.Error())
+	}
+	valid := ValidateCardNumber(cardData.CardNumber)
+	if valid == nil {
+		return c.String(http.StatusOK, "valid card number")
+	} else {
+		return c.String(http.StatusBadRequest, "invalid card number")
+	}
+}
+
+func ValidateCardNumber(cardNumber string) error {
+	cardNumber = strings.ReplaceAll(cardNumber, " ", "")
+
+	if cardNumber == "" {
+		return errors.New("invalid empty card number")
+	}
+
+	cardNumberSlice := []int64{}
+
+	for _, n := range cardNumber {
+
+		numeric, err := strconv.ParseInt(string(n), 10, 64)
+		if err != nil {
+			return errors.New("card number is not digit")
+		}
+		cardNumberSlice = append(cardNumberSlice, numeric)
+	}
+
+	return checkSum(cardNumberSlice)
+}
+
+func checkSum(num []int64) error {
+	var sum int64
+	j := 1
+	for i := len(num) - 1; i >= 0; i-- {
+		if j%2 == 0 {
+			num[i] = num[i] * 2
+			if num[i] >= 10 {
+				num[i] = num[i]%10 + num[i]/10
+			}
+		}
+		sum += num[i]
+		j++
+	}
+	if sum%10 == 0 {
+		return nil
+	} else {
+		return errors.New("invalid card number")
+	}
+}
