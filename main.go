@@ -14,20 +14,25 @@ func main() {
 	e.Logger.Fatal(e.Start(":1323"))
 }
 
-type CardData struct {
+type CardDataRequest struct {
 	CardNumber string `json:"card_number"`
 }
 
+type CardDataResponse struct {
+	Message string `json:"message"`
+}
+
 func cardHandler(c echo.Context) error {
-	var cardData CardData
-	if err := c.Bind(&cardData); err != nil {
+	var cardData CardDataRequest
+	var err error
+	if err = c.Bind(&cardData); err != nil {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
 	valid := ValidateCardNumber(cardData.CardNumber)
 	if valid == nil {
-		return c.String(http.StatusOK, "valid card number")
+		return c.JSON(http.StatusOK, CardDataResponse{Message: "valid card number"})
 	} else {
-		return c.String(http.StatusBadRequest, "invalid card number")
+		return c.JSON(http.StatusOK, CardDataResponse{Message: "invalid card number"})
 	}
 }
 
