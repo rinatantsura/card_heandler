@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/labstack/echo/v4"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,6 +15,10 @@ func main() {
 	e := echo.New()
 	e.POST("/", cardHandler)
 	e.Logger.Fatal(e.Start(":1323"))
+
+	var c Context
+	c.Body = "хуй"
+
 }
 
 type CardDataRequest struct {
@@ -25,6 +32,8 @@ type CardDataResponse struct {
 func cardHandler(c echo.Context) error {
 	var cardData CardDataRequest
 	var err error
+	body, err := io.ReadAll(c.Request().Body)
+	fmt.Println(string(body))
 	if err = c.Bind(&cardData); err != nil {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
@@ -32,7 +41,7 @@ func cardHandler(c echo.Context) error {
 	if valid == nil {
 		return c.JSON(http.StatusOK, CardDataResponse{Message: "valid card number"})
 	} else {
-		return c.JSON(http.StatusOK, CardDataResponse{Message: "invalid card number"})
+		return c.JSON(http.StatusBadRequest, CardDataResponse{Message: "invalid card number"})
 	}
 }
 
@@ -75,4 +84,17 @@ func checkSum(num []int64) error {
 	} else {
 		return errors.New("invalid card number")
 	}
+}
+
+type Context struct {
+	Body string
+}
+
+func (c Context) Bind(i interface{}) error {
+	err := json.Unmarshal([]byte(c.Body), i)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
